@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/JASKevinWhite/rdap/bootstrap"
-	"github.com/JASKevinWhite/rdap/bootstrap/cache"
-	"github.com/JASKevinWhite/rdap/sandbox"
+	"github.com/DataPulse/openrdap/bootstrap"
+	"github.com/DataPulse/openrdap/bootstrap/cache"
+	"github.com/DataPulse/openrdap/sandbox"
 
 	"golang.org/x/crypto/pkcs12"
 

@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/JASKevinWhite/rdap/test"
+	"github.com/DataPulse/openrdap/test"
 	"github.com/davecgh/go-spew/spew"
 )
 

@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/JASKevinWhite/rdap"
+	rdap "github.com/DataPulse/openrdap"
 )
 
 func main() {

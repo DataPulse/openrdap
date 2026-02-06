@@ -1,4 +1,4 @@
-module github.com/JASKevinWhite/rdap
+module github.com/DataPulse/openrdap
 
 go 1.24.0
 

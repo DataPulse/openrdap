@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/JASKevinWhite/rdap/test"
+	"github.com/DataPulse/openrdap/test"
 )
 
 func verboseFunc() func(text string) {
