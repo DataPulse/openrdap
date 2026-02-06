@@ -818,22 +818,22 @@ func (p *Printer) printUnknowns(d *DecodeData, indentLevel uint) {
 }
 
 func (p *Printer) printUnknown(key string, value interface{}, indentLevel uint) {
-	switch value.(type) {
+	switch value := value.(type) {
 	case bool:
-		p.printValue(key, strconv.FormatBool(value.(bool)), indentLevel)
+		p.printValue(key, strconv.FormatBool(value), indentLevel)
 	case float64:
-		p.printValue(key, strconv.FormatFloat(value.(float64), 'f', -1, 64), indentLevel)
+		p.printValue(key, strconv.FormatFloat(value, 'f', -1, 64), indentLevel)
 	case string:
-		p.printValue(key, value.(string), indentLevel)
+		p.printValue(key, value, indentLevel)
 	case []interface{}:
-		for _, value2 := range value.([]interface{}) {
+		for _, value2 := range value {
 			p.printUnknown(key, value2, indentLevel)
 		}
 	case map[string]interface{}:
 		p.printHeading(key, indentLevel)
 		indentLevel++
 
-		for key2, value2 := range value.(map[string]interface{}) {
+		for key2, value2 := range value {
 			p.printUnknown(key2, value2, indentLevel)
 		}
 	default:

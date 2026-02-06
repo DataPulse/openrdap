@@ -255,7 +255,7 @@ func (r *Request) URL() *url.URL {
 		resultURL = new(url.URL)
 		*resultURL = *r.Server
 	} else {
-		tempURL := &*r.Server
+		tempURL := *r.Server
 		tempURL.RawQuery = ""
 		tempURL.Fragment = ""
 		tempURLString := tempURL.String()

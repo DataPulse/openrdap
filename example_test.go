@@ -7,7 +7,7 @@ package rdap_test
 import (
 	"fmt"
 
-	"github.com/JASKevinWhite/rdap"
+	rdap "github.com/DataPulse/openrdap"
 )
 
 func Example() {
