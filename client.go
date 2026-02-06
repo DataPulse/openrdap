@@ -7,12 +7,12 @@ package rdap
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/openrdap/rdap/bootstrap"
+	"github.com/JASKevinWhite/rdap/bootstrap"
 )
 
 // Client implements an RDAP client.
@@ -275,7 +275,7 @@ func (c *Client) get(rdapReq *Request) *HTTPResponse {
 	}
 
 	defer resp.Body.Close()
-	httpResponse.Body, httpResponse.Error = ioutil.ReadAll(resp.Body)
+	httpResponse.Body, httpResponse.Error = io.ReadAll(resp.Body)
 
 	httpResponse.Duration = time.Since(start)
 

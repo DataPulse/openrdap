@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/JASKevinWhite/rdap/test"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/openrdap/rdap/test"
 )
 
 func TestDecodeEmpty(t *testing.T) {
