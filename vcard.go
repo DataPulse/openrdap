@@ -90,24 +90,34 @@ type VCardOptions struct {
 func (p *VCardProperty) Values() []string {
 	strings := make([]string, 0, 1)
 
-	p.appendValueStrings(p.Value, &strings)
+	p.appendValueStrings(p.Value, &strings, 0)
 
 	return strings
 }
 
-func (p *VCardProperty) appendValueStrings(v interface{}, strings *[]string) {
+func (p *VCardProperty) appendValueStrings(v interface{}, stringValues *[]string, deep int) {
+	deep = deep + 1
 	switch v := v.(type) {
 	case nil:
-		*strings = append(*strings, "")
+		*stringValues = append(*stringValues, "")
 	case bool:
-		*strings = append(*strings, strconv.FormatBool(v))
+		*stringValues = append(*stringValues, strconv.FormatBool(v))
 	case float64:
-		*strings = append(*strings, strconv.FormatFloat(v, 'f', -1, 64))
+		*stringValues = append(*stringValues, strconv.FormatFloat(v, 'f', -1, 64))
 	case string:
-		*strings = append(*strings, v)
+		*stringValues = append(*stringValues, v)
 	case []interface{}:
-		for _, v2 := range v {
-			p.appendValueStrings(v2, strings)
+		if deep < 2 {
+			for _, v2 := range v {
+				p.appendValueStrings(v2, stringValues, deep)
+			}
+		} else {
+			var all string
+			for _, v2 := range v {
+				all += v2.(string) + ", "
+			}
+			all = strings.TrimSuffix(all, ", ")
+			*stringValues = append(*stringValues, all)
 		}
 	default:
 		panic("Unknown type")
@@ -355,9 +365,33 @@ func (v *VCard) getFirstPropertySingleString(name string) string {
 	return strings.Join(property.Values(), " ")
 }
 
+func (v *VCard) getAllPropertiesString(name string) []string {
+	properties := v.Get(name)
+	var ret []string
+	for _, property := range properties {
+		ret = append(ret, strings.Join(property.Values(), " "))
+	}
+	return ret
+}
+
+// Version returns the VCard's version, e.g. "4.0".
+func (v *VCard) Version() string {
+	return v.getFirstPropertySingleString("version")
+}
+
+// Languages returns the VCard's languages, e.g. "de".
+func (v *VCard) Languages() []string {
+	return v.getAllPropertiesString("lang")
+}
+
 // Name returns the VCard's name. e.g. "John Smith".
 func (v *VCard) Name() string {
 	return v.getFirstPropertySingleString("fn")
+}
+
+// Org returns the VCard's org. e.g. "hosting.de GmbH".
+func (v *VCard) Org() string {
+	return v.getFirstPropertySingleString("org")
 }
 
 // POBox returns the address's PO Box.
@@ -412,6 +446,24 @@ func (v *VCard) Country() string {
 	return v.getFirstAddressField(6)
 }
 
+// CountryCode returns the Country Code from Parameter CC.
+//
+// See https://tools.ietf.org/html/rfc8605
+//
+// Returns empty string if no address is present.
+func (v *VCard) CountryCode() string {
+	adr := v.GetFirst("adr")
+	if adr == nil {
+		return ""
+	}
+
+	if _, ok := adr.Parameters["cc"]; ok {
+		return adr.Parameters["cc"][0]
+	}
+
+	return ""
+}
+
 // Tel returns the VCard's first (voice) telephone number.
 //
 // Returns empty string if the VCard contains no suitable telephone number.
@@ -433,7 +485,7 @@ func (v *VCard) Tel() string {
 		}
 
 		if isVoice && len(p.Values()) > 0 {
-			return (p.Values())[0]
+			return strings.Replace((p.Values())[0], "tel:", "", -1)
 		}
 	}
 
@@ -451,7 +503,7 @@ func (v *VCard) Fax() string {
 			for _, t := range types {
 				if t == "fax" {
 					if len(p.Values()) > 0 {
-						return (p.Values())[0]
+						return strings.Replace((p.Values())[0], "tel:", "", -1)
 					}
 				}
 			}
@@ -468,11 +520,13 @@ func (v *VCard) Email() string {
 	return v.getFirstPropertySingleString("email")
 }
 
-// Org returns the VCard's org.
+// ContactURI returns the VCard's first contact Uri.
 //
-// Returns empty string if the VCard contains no  organization.
-func (v *VCard) Org() string {
-	return v.getFirstPropertySingleString("org")
+// See https://tools.ietf.org/html/rfc8605
+//
+// Returns empty string if the VCard contains no contact-uri.
+func (v *VCard) ContactURI() string {
+	return v.getFirstPropertySingleString("contact-uri")
 }
 
 func (v *VCard) getFirstAddressField(index int) string {
