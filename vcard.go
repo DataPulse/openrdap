@@ -85,44 +85,67 @@ type VCardOptions struct {
 //
 // This is convenient for accessing simple unstructured data (e.g. "fn", "tel").
 //
-// The simplified []string representation is created by flattening the
-// (potentially nested) VCardProperty value, and converting all values to strings.
+// A scalar value becomes a single string. An array value becomes one string
+// per top-level component: a structured property such as "n" or "adr" keeps
+// its positions, so the third entry of an "adr" is always the street address.
+// RFC 7095 lets a component itself be an array (several street lines, several
+// honorific suffixes); such a component is flattened and joined with ", " into
+// its one entry rather than spread across several, which would shift every
+// later position. Scalars are converted as in scalarString.
 func (p *VCardProperty) Values() []string {
-	strings := make([]string, 0, 1)
-
-	p.appendValueStrings(p.Value, &strings, 0)
-
-	return strings
-}
-
-func (p *VCardProperty) appendValueStrings(v interface{}, stringValues *[]string, deep int) {
-	deep = deep + 1
-	switch v := v.(type) {
-	case nil:
-		*stringValues = append(*stringValues, "")
-	case bool:
-		*stringValues = append(*stringValues, strconv.FormatBool(v))
-	case float64:
-		*stringValues = append(*stringValues, strconv.FormatFloat(v, 'f', -1, 64))
-	case string:
-		*stringValues = append(*stringValues, v)
-	case []interface{}:
-		if deep < 2 {
-			for _, v2 := range v {
-				p.appendValueStrings(v2, stringValues, deep)
-			}
-		} else {
-			var all string
-			for _, v2 := range v {
-				all += v2.(string) + ", "
-			}
-			all = strings.TrimSuffix(all, ", ")
-			*stringValues = append(*stringValues, all)
-		}
-	default:
-		panic("Unknown type")
+	components, ok := p.Value.([]interface{})
+	if !ok {
+		return []string{scalarString(p.Value)}
 	}
 
+	values := make([]string, 0, len(components))
+	for _, component := range components {
+		values = append(values, componentString(component))
+	}
+	return values
+}
+
+// componentString renders one top-level component of an array value: a
+// scalar as itself, an array as its fully flattened members joined with ", ".
+func componentString(component interface{}) string {
+	nested, ok := component.([]interface{})
+	if !ok {
+		return scalarString(component)
+	}
+	return strings.Join(flattenValue(nested), ", ")
+}
+
+// flattenValue converts an array value of any depth into its scalar members
+// in order, each rendered by scalarString.
+func flattenValue(values []interface{}) []string {
+	flat := make([]string, 0, len(values))
+	for _, v := range values {
+		if nested, ok := v.([]interface{}); ok {
+			flat = append(flat, flattenValue(nested)...)
+			continue
+		}
+		flat = append(flat, scalarString(v))
+	}
+	return flat
+}
+
+// scalarString renders one of the scalar types readValue admits: nil as "",
+// a bool as "true"/"false", a number in its shortest exact form, a string as
+// itself. readValue rejects anything else at decode time, so the fallback is
+// for a VCardProperty built by hand.
+func scalarString(v interface{}) string {
+	switch v := v.(type) {
+	case nil:
+		return ""
+	case bool:
+		return strconv.FormatBool(v)
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case string:
+		return v
+	default:
+		return fmt.Sprint(v)
+	}
 }
 
 // String returns the vCard as a multiline human readable string. For example:

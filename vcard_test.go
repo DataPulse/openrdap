@@ -77,13 +77,15 @@ func TestVCardExample(t *testing.T) {
 		Value:      []interface{}{"Perreault", "Simon", "", "", []interface{}{"ing. jr", "M.Sc."}},
 	}
 
+	// One entry per "n" component (RFC 6350: family, given, additional,
+	// prefixes, suffixes). The suffix component is itself an array and is
+	// joined, not spread, so the five positions stay put.
 	expectedFlatN := []string{
 		"Perreault",
 		"Simon",
 		"",
 		"",
-		"ing. jr",
-		"M.Sc.",
+		"ing. jr, M.Sc.",
 	}
 
 	if !reflect.DeepEqual(j.Get("n")[0], expectedN) {
@@ -119,14 +121,14 @@ func TestVCardMixedDatatypes(t *testing.T) {
 		Value:      []interface{}{"abc", true, float64(42), nil, []interface{}{"def", false, float64(43)}},
 	}
 
+	// The nested array is one component, joined with ", ". Its members are
+	// not all strings, which used to panic in the join.
 	expectedFlatMixed := []string{
 		"abc",
 		"true",
 		"42",
 		"",
-		"def",
-		"false",
-		"43",
+		"def, false, 43",
 	}
 
 	if !reflect.DeepEqual(j.Get("mixed")[0], expectedMixed) {
@@ -136,6 +138,63 @@ func TestVCardMixedDatatypes(t *testing.T) {
 	flattened := j.Get("mixed")[0].Values()
 	if !reflect.DeepEqual(flattened, expectedFlatMixed) {
 		t.Errorf("mixed flat value incorrect %v", flattened)
+	}
+}
+
+// An "adr" component may be an array (RFC 7095 §3.3.1.3: several street
+// lines). Values() must keep one entry per component so the positional
+// accessors keep pointing at the right field; this is why nested arrays are
+// joined rather than spread.
+func TestVCardValuesKeepsAddressPositions(t *testing.T) {
+	adr := &VCardProperty{
+		Name:       "adr",
+		Parameters: make(map[string][]string),
+		Type:       "text",
+		Value: []interface{}{
+			"",
+			"Suite D2-630",
+			[]interface{}{"2875 Laurier", "Building B"},
+			"Quebec",
+			"QC",
+			"G1V 2M2",
+			"Canada",
+		},
+	}
+	expected := []string{"", "Suite D2-630", "2875 Laurier, Building B", "Quebec", "QC", "G1V 2M2", "Canada"}
+	if got := adr.Values(); !reflect.DeepEqual(got, expected) {
+		t.Errorf("Values() = %v, want %v", got, expected)
+	}
+
+	v := &VCard{Properties: []*VCardProperty{adr}}
+	if got := v.StreetAddress(); got != "2875 Laurier, Building B" {
+		t.Errorf("StreetAddress() = %q, want the joined street lines", got)
+	}
+	if got := v.Country(); got != "Canada" {
+		t.Errorf("Country() = %q, want %q: an array component shifted the positions", got, "Canada")
+	}
+}
+
+// Values() on scalar and deeply nested values: a scalar is one entry, and
+// nesting below the first level flattens fully into the component's entry
+// whatever the member types.
+func TestVCardValuesScalarsAndDeepNesting(t *testing.T) {
+	cases := []struct {
+		name  string
+		value interface{}
+		want  []string
+	}{
+		{"string", "4.0", []string{"4.0"}},
+		{"bool", true, []string{"true"}},
+		{"number", float64(42), []string{"42"}},
+		{"nil", nil, []string{""}},
+		{"empty array", []interface{}{}, []string{}},
+		{"deep", []interface{}{"a", []interface{}{"b", []interface{}{"c", float64(1), nil, false}}}, []string{"a", "b, c, 1, , false"}},
+	}
+	for _, c := range cases {
+		p := &VCardProperty{Name: c.name, Type: "text", Value: c.value}
+		if got := p.Values(); !reflect.DeepEqual(got, c.want) {
+			t.Errorf("%s: Values() = %#v, want %#v", c.name, got, c.want)
+		}
 	}
 }
 
