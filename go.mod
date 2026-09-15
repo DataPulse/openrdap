@@ -1,16 +1,16 @@
 module github.com/DataPulse/openrdap
 
-go 1.24.0
+go 1.27.1
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/davecgh/go-spew v1.1.1
-	github.com/jarcoal/httpmock v1.4.1
+	github.com/jarcoal/httpmock v1.4.2
 	github.com/mitchellh/go-homedir v1.1.0
-	golang.org/x/crypto v0.47.0
+	golang.org/x/crypto v0.57.0
 )
 
 require (
 	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b // indirect
-	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
+	github.com/xhit/go-str2duration/v2 v2.2.0 // indirect
 )
