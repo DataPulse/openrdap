@@ -37,7 +37,9 @@ func NewDNSRegistry(json []byte) (*DNSRegistry, error) {
 // Lookup returns the RDAP base URLs for the domain name question |question|.
 func (d *DNSRegistry) Lookup(question *Question) (*Answer, error) {
 	input := question.Query
-	input = strings.TrimSuffix(input, ".")
+	// This fork is published and consumed through the module proxy, and
+	// dpdomain has no published tag to depend on yet; see dpdomain/ALLOWLIST.md.
+	input = strings.TrimSuffix(input, ".") // dpdomain: not normalisation — bootstrap suffix walk on an already-normalized query
 	input = strings.ToLower(input)
 	fqdn := input
 
